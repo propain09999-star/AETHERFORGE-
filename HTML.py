@@ -35,3 +35,13 @@
   </script>
 </body>
 </html>
+// Initialize Revenue Tracking in the Abyss Log
+function updateRevenueDashboard() {
+  const revenueHTML = `
+    <div style="margin-top:20px; border-top:1px solid #333; padding-top:15px;">
+      <span style="color:#00ff9d; font-weight:bold;">[REVENUE_SWARM_STATUS]</span><br>
+      > ACTIVE_KEYS: 10 (BETA-FOUNDER)<br>
+      > PROJECTED_MRR: $5,000.00 USD<br>
+      > SURPLUS_COMPUTE: 84% (Available for Arbitrage)<br>
+      <button onclick="mintKey()" style="background:#00cfff; border:none; padding:5px 10px; margin-top:10px; cursor:pointer;">MINT NEXT KEY</button>
+    </div>
