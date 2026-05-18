@@ -12,11 +12,16 @@ def get_telemetry() -> dict:
     except:
         total = used = avail = 0
 
-    # CPU load
+    # CPU load — parse from uptime output (loadavg not accessible in Termux)
     try:
-        load = open("/proc/loadavg").read().split()[0]
+        r = subprocess.run(["uptime"], capture_output=True, text=True)
+        # uptime output contains "load average: 1.23, 1.45, 1.67"
+        if "load average:" in r.stdout:
+            load = r.stdout.split("load average:")[-1].strip().split(",")[0].strip()
+        else:
+            load = "n/a"
     except:
-        load = "?"
+        load = "n/a"
 
     # Storage
     try:
@@ -28,11 +33,14 @@ def get_telemetry() -> dict:
 
     # Uptime
     try:
-        secs = float(open("/proc/uptime").read().split()[0])
-        h, m = int(secs // 3600), int((secs % 3600) // 60)
-        uptime = f"{h}h {m}m"
+        r = subprocess.run(["uptime"], capture_output=True, text=True)
+        raw = r.stdout.strip()
+        if "up" in raw:
+            uptime = raw.split("up")[1].split(",")[0].strip()
+        else:
+            uptime = raw
     except:
-        uptime = "?"
+        uptime = "n/a"
 
     return {
         "ram_used_mb":  used,
