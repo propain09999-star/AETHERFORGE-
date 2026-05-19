@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>AETHORFORGE HUD</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    body {
+      background: radial-gradient(circle at top, #0b1220 0%, #030712 55%, #000 100%);
+    }
+    .glass {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      backdrop-filter: blur(12px);
+    }
+    .scrollbar::-webkit-scrollbar { width: 10px; }
+    .scrollbar::-webkit-scrollbar-thumb {
+      background: rgba(255,255,255,0.12);
+      border-radius: 12px;
+    }
+  </style>
+</head>
+
+<body class="text-gray-100 min-h-screen">
+  <div class="max-w-6xl mx-auto px-5 py-10">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-10">
+      <div>
+        <h1 class="text-3xl font-bold tracking-tight">
+          AETHORFORGE <span class="text-cyan-400">HUD</span>
+        </h1>
+        <p class="text-gray-400 text-sm mt-1">
+          Hybrid Routing · Telemetry · Mobile Edge Stack
+        </p>
+      </div>
+
+      <div class="flex items-center gap-3 glass rounded-2xl px-5 py-3">
+        <div id="statusDot" class="w-2.5 h-2.5 rounded-full bg-green-400 animate-pulse"></div>
+        <div id="statusText" class="text-sm text-gray-300">SYSTEM ONLINE</div>
+      </div>
+    </div>
+
+    <!-- Routing Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+      <div class="glass rounded-2xl p-6">
+        <div class="text-gray-400 text-xs uppercase tracking-wider">Routing Engine</div>
+        <div id="engine-val" class="text-2xl font-semibold mt-2 text-white">---</div>
+      </div>
+
+      <div class="glass rounded-2xl p-6">
+        <div class="text-gray-400 text-xs uppercase tracking-wider">Active Kernel</div>
+        <div id="kernel-val" class="text-2xl font-semibold mt-2 text-cyan-300">---</div>
+      </div>
+
+      <div class="glass rounded-2xl p-6">
+        <div class="text-gray-400 text-xs uppercase tracking-wider">KV Cache Savings</div>
+        <div id="cache-val" class="text-2xl font-semibold mt-2 text-green-300">---</div>
+      </div>
+
+      <div class="glass rounded-2xl p-6">
+        <div class="text-gray-400 text-xs uppercase tracking-wider">Allocation Reason</div>
+        <div id="justify-val" class="text-base mt-3 text-gray-200 leading-relaxed">---</div>
+      </div>
+
+    </div>
+
+    <!-- System Stats -->
+    <div class="glass rounded-2xl p-6 mt-8">
+      <div class="text-gray-400 text-xs uppercase tracking-wider mb-4">System Stats</div>
+
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+
+        <div class="bg-black/30 border border-white/10 rounded-xl p-4">
+          <div class="text-xs text-gray-400 uppercase">RAM Usage</div>
+          <div id="ram-val" class="text-xl font-semibold mt-2">---</div>
+        </div>
+
+        <div class="bg-black/30 border border-white/10 rounded-xl p-4">
+          <div class="text-xs text-gray-400 uppercase">Battery</div>
+          <div id="bat-val" class="text-xl font-semibold mt-2">---</div>
+        </div>
+
+        <div class="bg-black/30 border border-white/10 rounded-xl p-4">
+          <div class="text-xs text-gray-400 uppercase">Uptime</div>
+          <div id="uptime-val" class="text-xl font-semibold mt-2">---</div>
+        </div>
+
+        <div class="bg-black/30 border border-white/10 rounded-xl p-4">
+          <div class="text-xs text-gray-400 uppercase">CPU Load</div>
+          <div id="cpu-val" class="text-xl font-semibold mt-2">---</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Query Panel -->
+    <div class="glass rounded-2xl p-6 mt-8">
+      <div class="text-gray-400 text-xs uppercase tracking-wider">Manual Query Injection</div>
+      <div class="text-sm text-gray-300 mt-1">
+        Submit a query to force routing updates.
+      </div>
+
+      <div class="flex flex-col md:flex-row gap-3 mt-5">
+        <input id="queryInput"
+          class="w-full px-4 py-3 rounded-xl bg-black/40 border border-white/10 focus:outline-none focus:ring-2 focus:ring-cyan-400"
+          placeholder="Try: rag analysis tool execution with long memory context"
+        />
+
+        <button onclick="sendQuery()"
+          class="px-6 py-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-semibold transition">
+          Send
+        </button>
+      </div>
+    </div>
+
+    <!-- Log Feed -->
+    <div class="glass rounded-2xl p-6 mt-8">
+      <div class="flex items-center justify-between mb-3">
+        <div class="text-gray-400 text-xs uppercase tracking-wider">Telemetry Log Feed</div>
+        <button onclick="clearLogs()"
+          class="text-xs px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition">
+          Clear
+        </button>
+      </div>
+
+      <div id="logFeed" class="scrollbar space-y-2 text-sm text-gray-200 max-h-72 overflow-auto"></div>
+    </div>
+
+  </div>
+
+  <script>
+    let lastEngine = null;
+
+    function logLine(text) {
+      const feed = document.getElementById("logFeed");
+      const div = document.createElement("div");
+      div.className = "text-gray-200 bg-black/30 border border-white/10 rounded-xl px-4 py-2";
+      div.innerText = text;
+      feed.prepend(div);
+    }
+
+    function clearLogs() {
+      document.getElementById("logFeed").innerHTML = "";
+      logLine("[LOG] cleared");
+    }
+
+    function fmtUptime(seconds) {
+      if (!seconds) return "---";
+      seconds = Math.floor(seconds);
+      const h = Math.floor(seconds / 3600);
+      const m = Math.floor((seconds % 3600) / 60);
+      return `${h}h ${m}m`;
+    }
+
+    async function updateHUD() {
+      try {
+        const res = await fetch('/api/telemetry');
+        const data = await res.json();
+
+        document.getElementById('engine-val').innerText = data.routing_engine;
+        document.getElementById('kernel-val').innerText = data.active_hardware_kernel;
+        document.getElementById('cache-val').innerText = data.kv_cache_savings;
+        document.getElementById('justify-val').innerText = data.allocation_justification;
+
+        if (data.system) {
+          const mem = data.system.memory;
+          const bat = data.system.battery;
+          const load = data.system.loadavg;
+          const up = data.system.uptime_seconds;
+
+          if (mem) document.getElementById("ram-val").innerText = `${mem.used_pct}% (${mem.used_mb}MB)`;
+          if (bat) document.getElementById("bat-val").innerText = `${bat.percentage}% (${bat.status})`;
+          document.getElementById("uptime-val").innerText = fmtUptime(up);
+          if (load) document.getElementById("cpu-val").innerText = `${load["1m"]} / ${load["5m"]}`;
+        }
+
+        if (lastEngine !== data.routing_engine) {
+          lastEngine = data.routing_engine;
+          logLine(`[ROUTE] ${data.routing_engine} | ${data.active_hardware_kernel} | KV ${data.kv_cache_savings}`);
+        }
+
+      } catch(e) {
+        document.getElementById("statusText").innerText = "API OFFLINE";
+        document.getElementById("statusDot").className = "w-2.5 h-2.5 rounded-full bg-red-400 animate-pulse";
+      }
+    }
+
+    async function sendQuery() {
+      const q = document.getElementById("queryInput").value.trim();
+      if (!q) return;
+
+      await fetch("/api/query", {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({query: q})
+      });
+
+      logLine(`[QUERY] ${q}`);
+      document.getElementById("queryInput").value = "";
+      updateHUD();
+    }
+
+    setInterval(updateHUD, 1000);
+    updateHUD();
+  </script>
+</body>
+</html>
